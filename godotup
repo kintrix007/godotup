@@ -1,0 +1,56 @@
+#!/bin/bash
+
+VERSIONS=$(curl -Ls https://downloads.tuxfamily.org/godotengine/ \
+	| grep -E '^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$' \
+	| sed -E 's/^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$/\1/g')
+
+function has-version() {
+	for v in $VERSIONS; do
+		if [[ "$v" == "$1" ]]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+if [ -z $1 ]; then
+	echo "Expected and argument"
+	exit 1
+fi
+
+if ! [ -z $2 ]; then
+	echo "Expected only one argument"
+	exit 1
+fi
+
+if ! has-version "$1"; then
+	echo "Version $1 does not exist."
+	exit 2
+fi
+
+pushd >/dev/null `mktemp -d`
+
+ARCH=`unknown`
+
+case `uname -om` in
+	"x86_64 GNU/Linux")
+		ARCH='x11.64'
+		;;
+	"i686 GNU/Linux")
+		ARCH='x11.32'
+		;;
+	*)
+		echo "Error: Unsupported operating system."
+		exit 3
+		;;
+
+ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${1}/" \
+	| grep 'application/zip' \
+	| grep "$ARCH" \
+	| sed -E 's/^.*?<a.*?>(.+?)<\/a>.*$/\1/')
+
+URL="https://downloads.tuxfamily.org/godotengine/${1}/${ZIP}"
+
+wget $URL
+
+popd >/dev/null
