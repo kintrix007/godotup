@@ -13,12 +13,12 @@ function has-version() {
 	return 1
 }
 
-if [ -z $1 ]; then
+if [[ -z $1 ]]; then
 	echo "Expected and argument"
 	exit 1
 fi
 
-if ! [ -z $2 ]; then
+if ! [[ -z $2 ]]; then
 	echo "Expected only one argument"
 	exit 1
 fi
@@ -34,10 +34,18 @@ ARCH='unknown'
 
 case "$(uname -om)" in
 	"x86_64 GNU/Linux")
-		ARCH='x11.64'
+		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
+			ARCH='x86_64'
+		else
+			ARCH='x11.64'
+		fi
 		;;
 	"i686 GNU/Linux")
-		ARCH='x11.32'
+		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
+			ARCH='x86_32'
+		else
+			ARCH='x11.32'
+		fi
 		;;
 	*)
 		echo "Error: Unsupported operating system."
@@ -47,7 +55,7 @@ esac
 
 ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${1}/" \
 	| grep 'application/zip' \
-	| grep "$ARCH" \
+	| grep -F "$ARCH" \
 	| sed -E 's/^.*?<a.*?>(.+?)<\/a>.*$/\1/')
 EXE="${ZIP%%.zip}"
 
@@ -57,6 +65,8 @@ wget "$URL"
 unzip "$ZIP"
 rm "$ZIP"
 
-install "$EXE" -m 775 ~/.local/bin/godot-${1/./'-'}
+#install "$EXE" -m 775 ~/.local/bin/godot-${1/./'-'}
+# Do not replace dots with dashes
+install "$EXE" -m 775 ~/.local/bin/godot-$1
 
 popd >/dev/null
