@@ -57,6 +57,6 @@ wget "$URL"
 unzip "$ZIP"
 rm "$ZIP"
 
-mv "$EXE" ~/Downloads/godot-${1/./'-'}
+install "$EXE" -m 775 ~/.local/bin/godot-${1/./'-'}
 
 popd >/dev/null
