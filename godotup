@@ -42,14 +42,14 @@ ARCH='unknown'
 case "$(uname -om)" in
 	"x86_64 GNU/Linux")
 		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
-			ARCH='x86_64'
+			ARCH='linux.x86_64'
 		else
 			ARCH='x11.64'
 		fi
 		;;
 	"i686 GNU/Linux")
 		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
-			ARCH='x86_32'
+			ARCH='linux.x86_32'
 		else
 			ARCH='x11.32'
 		fi
