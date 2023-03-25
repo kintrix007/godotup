@@ -1,5 +1,7 @@
 #!/bin/bash
 
+GDUP_VERSION='0.0.1-alpha'
+
 VERSIONS=$(curl -Ls https://downloads.tuxfamily.org/godotengine/ \
 	| grep -E '^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$' \
 	| sed -E 's/^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$/\1/g')
@@ -23,8 +25,13 @@ if ! [[ -z $2 ]]; then
 	exit 1
 fi
 
+if [[ "$1" == "--version" || "$1" == "-v" ]]; then
+	echo "GodotUP $GDUP_VERSION"
+	exit 1
+fi
+
 if ! has-version "$1"; then
-	echo "Version $1 does not exist."
+	echo "Version '$1' does not exist."
 	exit 2
 fi
 
