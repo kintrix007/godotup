@@ -30,9 +30,9 @@ fi
 
 pushd >/dev/null `mktemp -d`
 
-ARCH=`unknown`
+ARCH='unknown'
 
-case `uname -om` in
+case "$(uname -om)" in
 	"x86_64 GNU/Linux")
 		ARCH='x11.64'
 		;;
@@ -43,14 +43,20 @@ case `uname -om` in
 		echo "Error: Unsupported operating system."
 		exit 3
 		;;
+esac
 
 ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${1}/" \
 	| grep 'application/zip' \
 	| grep "$ARCH" \
 	| sed -E 's/^.*?<a.*?>(.+?)<\/a>.*$/\1/')
+EXE="${ZIP%%.zip}"
 
 URL="https://downloads.tuxfamily.org/godotengine/${1}/${ZIP}"
 
-wget $URL
+wget "$URL"
+unzip "$ZIP"
+rm "$ZIP"
+
+mv "$EXE" ~/Downloads/godot-${1/./'-'}
 
 popd >/dev/null
