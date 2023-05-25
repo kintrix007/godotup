@@ -1,14 +1,16 @@
 #!/bin/bash
 
-GDUP_VERSION='0.0.1-alpha'
+GDUP_VERSION='0.0.2-alpha'
 
-VERSIONS=$(curl -Ls https://downloads.tuxfamily.org/godotengine/ \
-	| grep -E '^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$' \
+ROOT=$(dirname $(realpath ${BASH_SOURCE:-$0}))
+
+ALL_VERSIONS=$(curl -Ls https://downloads.tuxfamily.org/godotengine/ \
+	| grep -E '^.*<a.*?>([0-9](\.[0-9])+)</a>.*$' \
 	| sed -E 's/^.*<a.*?>([0-9](\.[0-9])+)<\/a>.*$/\1/g')
 
 function has-version() {
-	for v in $VERSIONS; do
-		if [[ "$v" == "$1" ]]; then
+	for v in $ALL_VERSIONS; do
+		if [[ "$v" == "$VERSION" ]]; then
 			return 0
 		fi
 	done
@@ -30,8 +32,10 @@ if [[ "$1" == "--version" || "$1" == "-v" ]]; then
 	exit 1
 fi
 
-if ! has-version "$1"; then
-	echo "Version '$1' does not exist."
+VERSION="$1"
+
+if ! has-version "$VERSION"; then
+	echo "Version '$VERSION' does not exist."
 	exit 2
 fi
 
@@ -41,14 +45,14 @@ ARCH='unknown'
 
 case "$(uname -om)" in
 	"x86_64 GNU/Linux")
-		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
+		if [[ "$VERSION" =~ ^4(\.[0-9])+$ ]]; then
 			ARCH='linux.x86_64'
 		else
 			ARCH='x11.64'
 		fi
 		;;
 	"i686 GNU/Linux")
-		if [[ "$1" =~ ^4(\.[0-9])+$ ]]; then
+		if [[ "$VERSION" =~ ^4(\.[0-9])+$ ]]; then
 			ARCH='linux.x86_32'
 		else
 			ARCH='x11.32'
@@ -60,13 +64,13 @@ case "$(uname -om)" in
 		;;
 esac
 
-ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${1}/" \
+ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${VERSION}/" \
 	| grep 'application/zip' \
 	| grep -F "$ARCH" \
 	| sed -E 's/^.*?<a.*?>(.+?)<\/a>.*$/\1/')
 EXE="${ZIP%%.zip}"
 
-URL="https://downloads.tuxfamily.org/godotengine/${1}/${ZIP}"
+URL="https://downloads.tuxfamily.org/godotengine/${VERSION}/${ZIP}"
 
 wget "$URL"
 unzip "$ZIP"
@@ -74,6 +78,10 @@ rm "$ZIP"
 
 #install "$EXE" -m 775 ~/.local/bin/godot-${1/./'-'}
 # Do not replace dots with dashes
-install "$EXE" -m 775 ~/.local/bin/godot-$1
+install "$EXE" -m 775 ~/.local/bin/godot-$VERSION
+
+# Create a desktop file
+cat $ROOT/godot-template.desktop | GODOT_VERSION=$VERSION envsubst \
+    > ~/.local/share/applications/godot-$VERSION.desktop
 
 popd >/dev/null
