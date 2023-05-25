@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GDUP_VERSION='0.0.2-alpha'
+GDUP_VERSION='0.0.3-alpha'
 
 ROOT=$(dirname $(realpath ${BASH_SOURCE:-$0}))
 
@@ -10,7 +10,7 @@ ALL_VERSIONS=$(curl -Ls https://downloads.tuxfamily.org/godotengine/ \
 
 function has-version() {
 	for v in $ALL_VERSIONS; do
-		if [[ "$v" == "$VERSION" ]]; then
+		if [[ "$v" == "$1" ]]; then
 			return 0
 		fi
 	done
@@ -22,40 +22,61 @@ if [[ -z $1 ]]; then
 	exit 1
 fi
 
+# Effectively deciding whether to install mono or non-mono
+INSTALL_PATH=""
+
 if ! [[ -z $2 ]]; then
-	echo "Expected only one argument"
-	exit 1
+    if [[ $1 == "--mono" ]]; then
+        INSTALL_PATH="mono"
+        VERSION=$2
+    else
+        echo "Expected only one argument"
+        exit 1
+    fi
+else
+    VERSION="$1"
 fi
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
 	echo "GodotUP $GDUP_VERSION"
-	exit 1
+	exit
 fi
-
-VERSION="$1"
 
 if ! has-version "$VERSION"; then
 	echo "Version '$VERSION' does not exist."
 	exit 2
 fi
 
+if ! [[ -d ~/.gdup ]]; then
+    mkdir ~/.gdup
+fi
+
 pushd >/dev/null `mktemp -d`
 
 ARCH='unknown'
 
+# Boy is the naming convention a mess...
 case "$(uname -om)" in
 	"x86_64 GNU/Linux")
 		if [[ "$VERSION" =~ ^4(\.[0-9])+$ ]]; then
 			ARCH='linux.x86_64'
 		else
-			ARCH='x11.64'
+            if [[ "$INSTALL_PATH" == "mono" ]]; then
+                ARCH='x11_64'
+            else
+                ARCH='x11.64'
+            fi
 		fi
 		;;
 	"i686 GNU/Linux")
 		if [[ "$VERSION" =~ ^4(\.[0-9])+$ ]]; then
 			ARCH='linux.x86_32'
 		else
-			ARCH='x11.32'
+            if [[ "$INSTALL_PATH" == "mono" ]]; then
+                ARCH='x11_32'
+            else
+                ARCH='x11.32'
+            fi
 		fi
 		;;
 	*)
@@ -64,24 +85,35 @@ case "$(uname -om)" in
 		;;
 esac
 
-ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${VERSION}/" \
+ZIP=$(curl -Ls "https://downloads.tuxfamily.org/godotengine/${VERSION}/${INSTALL_PATH}/" \
 	| grep 'application/zip' \
 	| grep -F "$ARCH" \
 	| sed -E 's/^.*?<a.*?>(.+?)<\/a>.*$/\1/')
-EXE="${ZIP%%.zip}"
-
-URL="https://downloads.tuxfamily.org/godotengine/${VERSION}/${ZIP}"
+URL="https://downloads.tuxfamily.org/godotengine/${VERSION}/${INSTALL_PATH}/${ZIP}"
 
 wget "$URL"
 unzip "$ZIP"
 rm "$ZIP"
 
-#install "$EXE" -m 775 ~/.local/bin/godot-${1/./'-'}
-# Do not replace dots with dashes
-install "$EXE" -m 775 ~/.local/bin/godot-$VERSION
+if [[ "$INSTALL_PATH" == "mono" ]]; then
+    DIRNAME="${ZIP%%.zip}"
 
-# Create a desktop file
-cat $ROOT/godot-template.desktop | GODOT_VERSION=$VERSION envsubst \
-    > ~/.local/share/applications/godot-$VERSION.desktop
+    mv $DIRNAME ~/.gdup/godot-mono-${VERSION}
+    ln -sfv ~/.gdup/godot-mono-${VERSION}/Godot_v${VERSION}-* \
+        ~/.local/bin/godot-mono-${VERSION}
+
+    # Create a desktop file
+    cat $ROOT/godot-mono-template.desktop | GODOT_VERSION=$VERSION envsubst \
+        > ~/.local/share/applications/godot-mono-$VERSION.desktop
+else
+    EXE="${ZIP%%.zip}"
+
+    install "$EXE" -m 775 ~/.gdup/godot-$VERSION
+    ln -sfv ~/.gdup/godot-$VERSION ~/.local/bin/godot-$VERSION
+
+    # Create a desktop file
+    cat $ROOT/godot-template.desktop | GODOT_VERSION=$VERSION envsubst \
+        > ~/.local/share/applications/godot-$VERSION.desktop
+fi
 
 popd >/dev/null
