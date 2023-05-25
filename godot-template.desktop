@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Godot ${GODOT_VERSION}
+TryExec=godot-${GODOT_VERSION}
+Exec=godot-${GODOT_VERSION}
+Icon=godot
+Terminal=false
+Categories=Development;
+MimeType=x-scheme-handler/godot;x-scheme-handler/godotengine;
+Comment=The game engine you've been waiting for
